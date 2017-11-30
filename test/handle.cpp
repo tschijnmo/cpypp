@@ -13,6 +13,11 @@ using namespace cpypp;
 
 TEST_CASE("Handles correctly manages reference counts", "[Handle]")
 {
+
+    // In this basic test case, after each operation, we generally check the
+    // Python object, if_borrow, or boolean conversion first, before checking
+    // the reference counts.
+
     SECTION("Owning handles")
     {
         PyObject* one = Py_BuildValue("i", 1);
@@ -30,10 +35,10 @@ TEST_CASE("Handles correctly manages reference counts", "[Handle]")
             {
                 Handle handle(one);
 
-                CHECK(Py_REFCNT(one) == init_count);
                 CHECK(handle.get() == one);
                 CHECK(!handle.if_borrow());
                 CHECK(handle);
+                CHECK(Py_REFCNT(one) == init_count);
             }
             CHECK(Py_REFCNT(one) == init_count - 1);
         }
@@ -92,8 +97,9 @@ TEST_CASE("Handles correctly manages reference counts", "[Handle]")
         {
             {
                 Handle handle(one);
-                CHECK(Py_REFCNT(one) == init_count);
+
                 CHECK(handle.release() == one);
+                CHECK(!handle);
                 CHECK(Py_REFCNT(one) == init_count);
             }
             CHECK(Py_REFCNT(one) == init_count);
@@ -115,7 +121,10 @@ TEST_CASE("Handles correctly manages reference counts", "[Handle]")
                     CHECK(Py_REFCNT(two) == init_count2);
 
                     handle = handle2;
-                    CHECK(handle.get() == handle2.get());
+                    CHECK(handle.get() == two);
+                    CHECK(!handle.if_borrow());
+                    CHECK(handle2.get() == two);
+                    CHECK(!handle2.if_borrow());
                     CHECK(Py_REFCNT(one) == init_count - 1);
                     CHECK(Py_REFCNT(two) == init_count2 + 1);
                 }
@@ -133,9 +142,11 @@ TEST_CASE("Handles correctly manages reference counts", "[Handle]")
                     CHECK(Py_REFCNT(two) == init_count2);
 
                     handle = std::move(handle2);
+                    CHECK(handle.get() == two);
+                    CHECK(!handle.if_borrow());
+                    CHECK(!handle2);
                     CHECK(Py_REFCNT(one) == init_count - 1);
                     CHECK(Py_REFCNT(two) == init_count2);
-                    CHECK(!handle2);
                 }
 
                 CHECK(Py_REFCNT(one) == init_count - 1);
@@ -148,10 +159,10 @@ TEST_CASE("Handles correctly manages reference counts", "[Handle]")
                     Handle handle{ one };
                     handle.reset(two);
 
+                    CHECK(handle.get() == two);
+                    CHECK(!handle.if_borrow());
                     CHECK(Py_REFCNT(one) == init_count - 1);
                     CHECK(Py_REFCNT(two) == init_count2);
-                    CHECK(!handle.if_borrow());
-                    CHECK(handle.get() == two);
                 }
 
                 CHECK(Py_REFCNT(two) == init_count2 - 1);
@@ -233,7 +244,7 @@ TEST_CASE("Handles correctly manages reference counts", "[Handle]")
 
     SECTION("Borrowing handles")
     {
-        // Testing of borrowing handles are relatively easy, no matter what
+        // Testing of borrowing handles is relatively easy, no matter what
         // happens, the reference count should never be touched.
         PyObject* one = Py_BuildValue("i", 1);
         PyObject* two = Py_BuildValue("i", 2);
@@ -319,8 +330,10 @@ TEST_CASE("Handles correctly manages reference counts", "[Handle]")
                 check_ref();
 
                 handle = handle2;
-                CHECK(handle.get() == handle2.get());
+                CHECK(handle.get() == two);
                 CHECK(handle.if_borrow());
+                CHECK(handle2.get() == two);
+                CHECK(handle2.if_borrow());
                 check_ref();
             }
 
@@ -350,8 +363,8 @@ TEST_CASE("Handles correctly manages reference counts", "[Handle]")
                 Handle handle{ one, true };
                 handle.reset(two, true);
 
-                CHECK(handle.if_borrow());
                 CHECK(handle.get() == two);
+                CHECK(handle.if_borrow());
                 check_ref();
             }
 
@@ -367,8 +380,10 @@ TEST_CASE("Handles correctly manages reference counts", "[Handle]")
                 check_ref();
 
                 handle = handle2;
-                CHECK(handle.get() == handle2.get());
+                CHECK(handle.get() == two);
                 CHECK(handle.if_borrow());
+                CHECK(handle2.get() == two);
+                CHECK(handle2.if_borrow());
                 check_ref();
             }
 
@@ -380,12 +395,12 @@ TEST_CASE("Handles correctly manages reference counts", "[Handle]")
             {
                 Handle handle{};
                 Handle handle2(two, true);
-                check_ref();
 
                 handle = std::move(handle2);
                 CHECK(handle.get() == two);
                 CHECK(handle.if_borrow());
                 CHECK(!handle2);
+                check_ref();
             }
 
             check_ref();
