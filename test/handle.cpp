@@ -503,4 +503,14 @@ TEST_CASE("Handles support comparison operations")
         CHECK(big >= small);
         CHECK_FALSE(small >= big);
     }
+
+    SECTION("Reports invalid comparisons")
+    {
+        auto one = build_int(1l);
+        CHECK_THROWS_AS(small < one, Exc_set);
+        PyObject* exc = PyErr_Occurred();
+        REQUIRE(exc != nullptr);
+        CHECK(PyErr_GivenExceptionMatches(exc, PyExc_TypeError));
+        PyErr_Clear();
+    }
 }
