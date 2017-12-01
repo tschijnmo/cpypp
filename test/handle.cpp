@@ -442,3 +442,65 @@ TEST_CASE("Handles correctly manages reference counts", "[Handle]")
         Py_DECREF(one);
     }
 }
+
+TEST_CASE("Handles support comparison operations")
+{
+    // In order to make sure that we actually delegate to the Python comparison
+    // operation, simple lists with different identities are used.
+
+    auto small = build_handle("[ii]", 1, 1);
+    auto small2 = build_handle("[ii]", 1, 1);
+    auto big = build_handle("[ii]", 1, 2);
+
+    SECTION("The handled objects has different identity")
+    {
+        // Here we parallel raw pointer comparison with `is` comparison to have
+        // `is` tested as well.
+        CHECK(small.get() != small2.get());
+        CHECK_FALSE(small.is(small2));
+
+        Handle dup{ small };
+        CHECK(dup.get() == small.get());
+        CHECK(dup.is(small));
+    }
+
+    SECTION("Supports less-than")
+    {
+        CHECK(small < big);
+        CHECK_FALSE(small < small2);
+        CHECK_FALSE(big < small);
+    }
+
+    SECTION("Supports less-than-or-equal")
+    {
+        CHECK(small <= big);
+        CHECK(small <= small2);
+        CHECK_FALSE(big <= small);
+    }
+
+    SECTION("Supports equal")
+    {
+        CHECK(small == small2);
+        CHECK_FALSE(small == big);
+    }
+
+    SECTION("Supports not-equal")
+    {
+        CHECK_FALSE(small != small2);
+        CHECK(small != big);
+    }
+
+    SECTION("Supports greater-than")
+    {
+        CHECK_FALSE(small > small2);
+        CHECK(big > small);
+        CHECK_FALSE(small > big);
+    }
+
+    SECTION("Supports greater-than-or-equal")
+    {
+        CHECK(small >= small2);
+        CHECK(big >= small);
+        CHECK_FALSE(small >= big);
+    }
+}
