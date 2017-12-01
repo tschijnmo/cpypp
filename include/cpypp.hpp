@@ -10,6 +10,7 @@
 #define CPYPP_CPYPP_HPP
 
 #include <algorithm>
+#include <utility>
 
 namespace cpypp {
 
@@ -200,6 +201,49 @@ public:
         return ref;
     }
 
+    //
+    // Number protocol
+    //
+
+    /** Checks if the object provide numeric protocols.
+     */
+
+    bool check_number() const noexcept { return PyNumber_Check(ref_) == 1; }
+
+    /** Adds two numbers.
+     */
+
+    friend Handle operator+(const Handle& o1, const Handle& o2)
+    {
+        PyObject* res = PyNumber_Add(o1.get(), o2.get());
+        return Handle(res);
+    }
+
+    /** Multiplies two numbers.
+     */
+
+    friend Handle operator*(const Handle& o1, const Handle& o2)
+    {
+        PyObject* res = PyNumber_Multiply(o1.get(), o2.get());
+        return Handle(res);
+    }
+
+    /** Gets the quotient and the remainder.
+     */
+
+    std::pair<Handle, Handle> divmod(const Handle& o) const
+    {
+        PyObject* res = PyNumber_Divmod(get(), o.get());
+        if (res == nullptr) {
+            throw Exc_set();
+        }
+
+        std::pair<Handle, Handle> ret{ Handle(PySequence_GetItem(res, 0)),
+            Handle(PySequence_GetItem(res, 1)) };
+        Py_DECREF(res);
+
+        return ret;
+    }
 
     //
     // Python object comparisons
