@@ -4,6 +4,10 @@
  *
  * This is only header file for the project.  Everything is defined inside the
  * `cpypp` namespace.  It can simply be included in files where it is needed.
+ *
+ * The both the methods and their tests are roughly sectioned in the same way
+ * as the organization of the wrapped functions in the CPython C API
+ * documentation.
  */
 
 #ifndef CPYPP_CPYPP_HPP
