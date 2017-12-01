@@ -443,7 +443,7 @@ TEST_CASE("Handles correctly manages reference counts", "[Handle]")
     }
 }
 
-TEST_CASE("Handles support comparison operations")
+TEST_CASE("Handles support comparison operations", "[Handle][Comparison]")
 {
     // In order to make sure that we actually delegate to the Python comparison
     // operation, simple lists with different identities are used.
