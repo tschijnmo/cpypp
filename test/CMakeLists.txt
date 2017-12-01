@@ -9,6 +9,7 @@ file(DOWNLOAD
 add_executable(testmain
     test.cpp
     handle.cpp
+    mk_utils.cpp
 )
 target_include_directories(testmain
     PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
