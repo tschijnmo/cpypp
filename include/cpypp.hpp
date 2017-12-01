@@ -239,6 +239,31 @@ private:
 
     bool if_borrow_;
 };
+
+//
+// Utilities for handle building
+//
+
+/** Makes a handle from the Py_BuildValue function.
+ *
+ * All the arguments are exactly forwarded to the CPython Py_BuildValue
+ * function, with the resulted objected given to the handle.
+ */
+
+template <typename... Args> Handle build_handle(Args&&... args)
+{
+    return Handle(Py_BuildValue(std::forward<Args>(args)...));
+}
+
+/** Builds a built-in Python int object.
+ */
+
+inline Handle build_int(long v) { return Handle(PyLong_FromLong(v)); }
+
+inline Handle build_int(unsigned long v)
+{
+    return Handle(PyLong_FromUnsignedLong(v));
+}
 }
 
 #endif
