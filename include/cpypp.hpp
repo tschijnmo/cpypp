@@ -200,6 +200,26 @@ public:
         return ref;
     }
 
+
+    //
+    // Python object comparisons
+    //
+    // The C++ comparison operators are all mapped into the corresponding
+    // comparison for Python object.
+    //
+
+    bool operator<(const Handle& o) const { return compare<Py_LT>(o); }
+    bool operator<=(const Handle& o) const { return compare<Py_LE>(o); }
+    bool operator==(const Handle& o) const { return compare<Py_EQ>(o); }
+    bool operator!=(const Handle& o) const { return compare<Py_NE>(o); }
+    bool operator>(const Handle& o) const { return compare<Py_GT>(o); }
+    bool operator>=(const Handle& o) const { return compare<Py_GE>(o); }
+
+    /** Compares the identity of the underlying object.
+     */
+
+    bool is(const Handle& o) const { return get() == o.get(); }
+
 private:
     //
     // Reference counting handling.
@@ -223,6 +243,19 @@ private:
         if (!if_borrow_) {
             Py_INCREF(ref_);
         }
+    }
+
+    //
+    // Python object comparisons
+    //
+
+    template <int op> bool compare(const Handle o) const
+    {
+        int res = PyObject_RichCompareBool(get(), o.get(), op);
+        if (res == -1) {
+            throw Exc_set();
+        }
+        return res == 1;
     }
 
     //
