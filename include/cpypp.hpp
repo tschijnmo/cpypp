@@ -14,6 +14,7 @@
 #define CPYPP_CPYPP_HPP
 
 #include <algorithm>
+#include <cassert>
 #include <utility>
 
 namespace cpypp {
@@ -52,6 +53,12 @@ inline int check_exc()
     }
     return 0;
 }
+
+//
+// Forward declaration of some types.
+//
+
+class Iter_handle;
 
 /** Handles for Python objects.
  *
@@ -284,6 +291,28 @@ public:
     bool is(const Handle& o) const { return get() == o.get(); }
 
     //
+    // Iterator protocol
+    //
+
+    /** Gets the iterator for iterating over the managed object.
+     *
+     * This method calls the `PyObject_GetIter` function and puts the resulted
+     * Python iterator to be handled by the `Iter_handle` class.  For
+     * non-iterable objects, `Exc_set` is raised with the Python exception set
+     * by the `PyObject_GetIter` function.
+     */
+
+    Iter_handle begin() const;
+
+    /** Gets the sentinel iterator testing the end of an iterator.
+     *
+     * To make the iteration more C++ idiomatic, this method constructs the
+     * default one-past-end sentinel iterator of `Iter_handle` type.
+     */
+
+    Iter_handle end() const;
+
+    //
     // Conversion to native C++ objects.
     //
 
@@ -399,6 +428,147 @@ inline Handle build_int(unsigned long v)
 {
     return Handle(PyLong_FromUnsignedLong(v));
 }
+
+//
+// Utilities for the iterator protocol
+//
+
+/** Wrapper over a Python iterator.
+ *
+ * This class aims to facilitate the iteration over Python iterators.  A Python
+ * iterator can be wrapped inside and the Python object can be obtained by the
+ * C++ dereferencing operator `*`, with the C++ `++` operator denoting
+ * advancement.
+ *
+ * The end of the iterator can be tested in either the Python/Java way of
+ * calling a unary predicate (a method named `has_val` here), or handled in the
+ * idiomatic C++ way of binary comparison with the one-past-end sentinel, which
+ * can be constructed by using the default constructor.  Especially, it satisfy
+ * the C++ `ForwardIterator` concept.
+ *
+ * Normally, for iterating over Python iterable objects, the `Handle::begin`
+ * and `Handle::end` method can be used for the iterable, instead of direct
+ * construction of objects of this class, although this class can be used
+ * directly on any Python iterators from other sources.
+ *
+ */
+
+class Iter_handle : private Handle {
+public:
+    using value_type = Handle;
+    using difference_type = ptrdiff_t;
+    using reference = const Handle&;
+    using pointer = const Handle*;
+    using iterator_category = std::input_iterator_tag;
+
+    /** Constructs an end sentinel.
+     *
+     * By default, the past-the-end sentinel is constructed.
+     */
+
+    Iter_handle()
+        : Handle{}
+        , val_{}
+    {
+    }
+
+    /** Constructs a handle for a Python iterator.
+     *
+     * Reference will be stolen and a null pointer will be taken to indicate
+     * that an exception is already set on Python runtime, for the convenience
+     * of working with `PyObject_GetIter` function.
+     *
+     * If the given object is not an iterator, Python exception will be set and
+     * `Exc_set` exception will be thrown.
+     */
+
+    Iter_handle(PyObject* obj)
+        : Handle(obj)
+        , val_{}
+    {
+        // Adapted from CPython Python/bltinmodule.c for consistency.
+        if (!PyIter_Check(get())) {
+            PyErr_Format(PyExc_TypeError, "'%.200s' object is not an iterator",
+                get()->ob_type->tp_name);
+            throw Exc_set();
+        }
+
+        set_next();
+    }
+
+    /** Makes equality comparison with the sentinel.
+     *
+     * Note that we can only make equality comparison with a past-the-end
+     * sentinel.  Otherwise an assertion will fail.
+     */
+
+    friend bool operator!=(const Iter_handle& o1, const Iter_handle& o2)
+    {
+        // One of them has to be a sentinel.
+        assert(!o1 != !o2);
+
+        if (!o1) {
+            // When o1 is the sentinel.
+            return o2.has_val();
+        } else {
+            return o1.has_val();
+        }
+    }
+
+    friend bool operator==(const Iter_handle& o1, const Iter_handle& o2)
+    {
+        return !(o1 != o2);
+    }
+
+    /** Dereferences the iterator.
+     *
+     * Note that an empty handle will be returned if the iterator is no longer
+     * dereferenceable.
+     */
+
+    const Handle& operator*() const noexcept { return val_; }
+
+    /** Increments the iterator.
+     */
+
+    Iter_handle& operator++()
+    {
+        set_next();
+        return *this;
+    }
+
+    /** Tests if the iterator has an value.
+     */
+
+    bool has_val() const noexcept { return bool(val_); }
+
+private:
+    /** Sets the next object from the Python iterator as the current value.
+     *
+     * The underlying Python iterator is also incremented in this way.
+     */
+
+    void set_next()
+    {
+        val_.reset(PyIter_Next(get()), false, true);
+        if (!val_) {
+            if (PyErr_Occurred())
+                throw Exc_set();
+        }
+    }
+
+    /** The current object from the iterator.
+     */
+
+    Handle val_;
+};
+
+inline Iter_handle Handle::begin() const
+{
+    return Iter_handle(PyObject_GetIter(ref_));
+}
+
+inline Iter_handle Handle::end() const { return Iter_handle{}; }
 }
 
 #endif
