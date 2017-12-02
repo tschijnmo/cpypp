@@ -9,6 +9,7 @@ file(DOWNLOAD
 add_executable(testmain
     test.cpp
     handle.cpp
+    exc_utils.cpp
     number_proto.cpp
     parse_build.cpp
 )
