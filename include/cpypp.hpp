@@ -60,6 +60,19 @@ inline int check_exc()
 
 class Iter_handle;
 
+/** Ways to take the given Python object reference by Handle.
+ *
+ * `STEAL` assumes that the given pointer is a new reference, which will be
+ * stolen.
+ *
+ * `BORROW` only creates a borrowing handle, which does not touch the reference
+ * count of the managed object.
+ *
+ * `NEW` takes a borrowed reference but create a new reference for the handle.
+ */
+
+enum Own { STEAL, BORROW, NEW };
+
 /** Handles for Python objects.
  *
  * This base class serves as a handle to a Python object.  It can manage Python
@@ -83,20 +96,17 @@ public:
      * reference is to be created, this constructor *steals the reference* to
      * the object.
      *
-     * @param if_borrow If this handle borrows the reference only.
+     * @param own How the ownership of the reference is to be treated, as
+     * explained in `Own`.
      *
      * @param allow_null If null pointer triggers `Exc_set` to be thrown
      * immediately.  This can be useful for calling CPython functions that set
      * the exception correctly before returning a NULL.
      */
 
-    Handle(PyObject* ref, bool if_borrow = false, bool allow_null = false)
-        : ref_{ ref }
-        , if_borrow_{ if_borrow }
+    Handle(PyObject* ref, Own own = STEAL, bool allow_null = false)
     {
-        if (ref == nullptr && !allow_null) {
-            throw Exc_set();
-        }
+        set(ref, own, allow_null);
     }
 
     /** Constructs an empty handle by default.
@@ -183,16 +193,10 @@ public:
      * All the parameters has the same semantics as the constructor.
      */
 
-    void reset(PyObject* ref, bool if_borrow = false, bool allow_null = false)
+    void reset(PyObject* ref, Own own = STEAL, bool allow_null = false)
     {
         decr_ref();
-
-        ref_ = ref;
-        if_borrow_ = if_borrow;
-
-        if (ref == nullptr && !allow_null) {
-            throw Exc_set();
-        }
+        set(ref, own, allow_null);
     }
 
     /** Gets the pointer to the Python object handled.
@@ -355,6 +359,22 @@ private:
     //
     // Reference counting handling.
     //
+
+    /** Sets the current handle to refer to the given object.
+     */
+
+    void set(PyObject* ref, Own own, bool allow_null)
+    {
+        ref_ = ref;
+        if_borrow_ = own == BORROW;
+
+        if (ref_ == nullptr && !allow_null) {
+            throw Exc_set();
+        }
+        if (own == NEW && ref_ != nullptr) {
+            Py_INCREF(ref_);
+        }
+    }
 
     /** Decrements the reference count for owning reference to a non-null.
      */
@@ -550,7 +570,7 @@ private:
 
     void set_next()
     {
-        val_.reset(PyIter_Next(get()), false, true);
+        val_.reset(PyIter_Next(get()), STEAL, true);
         if (!val_) {
             if (PyErr_Occurred())
                 throw Exc_set();

@@ -17,6 +17,9 @@ TEST_CASE("Handles correctly manages reference counts", "[Handle]")
     // In this basic test case, after each operation, we generally check the
     // Python object, if_borrow, or boolean conversion first, before checking
     // the reference counts.
+    //
+    // Due to the basic nature of the test, higher level utilities from cpypp
+    // is deliberately unused.
 
     SECTION("Owning handles")
     {
@@ -41,6 +44,20 @@ TEST_CASE("Handles correctly manages reference counts", "[Handle]")
                 CHECK(Py_REFCNT(one) == init_count);
             }
             CHECK(Py_REFCNT(one) == init_count - 1);
+        }
+
+        SECTION("can create new reference from initialization.")
+        {
+            {
+                Handle handle(one, NEW);
+
+                CHECK(handle.get() == one);
+                CHECK(!handle.if_borrow());
+                CHECK(handle);
+                CHECK(Py_REFCNT(one) == init_count + 1);
+            }
+            CHECK(Py_REFCNT(one) == init_count);
+            Py_DECREF(one);
         }
 
         SECTION("can be default initialized")
@@ -89,7 +106,7 @@ TEST_CASE("Handles correctly manages reference counts", "[Handle]")
 
         SECTION("throw no exception at null object when disabled")
         {
-            Handle handle(nullptr, false, true);
+            Handle handle(nullptr, STEAL, true);
             CHECK(!handle);
         }
 
@@ -258,7 +275,7 @@ TEST_CASE("Handles correctly manages reference counts", "[Handle]")
         SECTION("touch no reference count from initialization.")
         {
             {
-                Handle handle(one, true);
+                Handle handle(one, BORROW);
 
                 CHECK(handle.get() == one);
                 CHECK(handle.if_borrow());
@@ -271,7 +288,7 @@ TEST_CASE("Handles correctly manages reference counts", "[Handle]")
         SECTION("can be copy initialized")
         {
             {
-                Handle handle(one, true);
+                Handle handle(one, BORROW);
 
                 Handle handle2(handle);
                 CHECK(handle2.get() == one);
@@ -288,7 +305,7 @@ TEST_CASE("Handles correctly manages reference counts", "[Handle]")
         SECTION("can be move initialized")
         {
             {
-                Handle handle(one, true);
+                Handle handle(one, BORROW);
 
                 Handle handle2(std::move(handle));
                 CHECK(handle2.get() == one);
@@ -302,19 +319,19 @@ TEST_CASE("Handles correctly manages reference counts", "[Handle]")
 
         SECTION("throw exception at null object when asked")
         {
-            CHECK_THROWS_AS(Handle(nullptr, true), Exc_set);
+            CHECK_THROWS_AS(Handle(nullptr, BORROW), Exc_set);
         }
 
         SECTION("throw no exception at null object when disabled")
         {
-            Handle handle(nullptr, true, true);
+            Handle handle(nullptr, BORROW, true);
             CHECK(!handle);
         }
 
         SECTION("can release ownership")
         {
             {
-                Handle handle(one, true);
+                Handle handle(one, BORROW);
                 check_ref();
                 CHECK(handle.release() == one);
                 check_ref();
@@ -325,8 +342,8 @@ TEST_CASE("Handles correctly manages reference counts", "[Handle]")
         SECTION("can be copy assigned with existing managed object")
         {
             {
-                Handle handle(one, true);
-                Handle handle2(two, true);
+                Handle handle(one, BORROW);
+                Handle handle2(two, BORROW);
                 check_ref();
 
                 handle = handle2;
@@ -343,8 +360,8 @@ TEST_CASE("Handles correctly manages reference counts", "[Handle]")
         SECTION("can be move assigned with existing managed object")
         {
             {
-                Handle handle(one, true);
-                Handle handle2(two, true);
+                Handle handle(one, BORROW);
+                Handle handle2(two, BORROW);
                 check_ref();
 
                 handle = std::move(handle2);
@@ -360,8 +377,8 @@ TEST_CASE("Handles correctly manages reference counts", "[Handle]")
         SECTION("can be reset with managed object")
         {
             {
-                Handle handle{ one, true };
-                handle.reset(two, true);
+                Handle handle{ one, BORROW };
+                handle.reset(two, BORROW);
 
                 CHECK(handle.get() == two);
                 CHECK(handle.if_borrow());
@@ -375,7 +392,7 @@ TEST_CASE("Handles correctly manages reference counts", "[Handle]")
         {
             {
                 Handle handle{};
-                Handle handle2(two, true);
+                Handle handle2(two, BORROW);
                 CHECK(!handle);
                 check_ref();
 
@@ -394,7 +411,7 @@ TEST_CASE("Handles correctly manages reference counts", "[Handle]")
         {
             {
                 Handle handle{};
-                Handle handle2(two, true);
+                Handle handle2(two, BORROW);
 
                 handle = std::move(handle2);
                 CHECK(handle.get() == two);
@@ -412,7 +429,7 @@ TEST_CASE("Handles correctly manages reference counts", "[Handle]")
                 Handle handle{};
                 CHECK(!handle);
 
-                handle.reset(two, true);
+                handle.reset(two, BORROW);
                 CHECK(handle.get() == two);
                 CHECK(handle.if_borrow());
                 check_ref();
@@ -424,8 +441,8 @@ TEST_CASE("Handles correctly manages reference counts", "[Handle]")
         SECTION("can be swapped with another handle")
         {
             {
-                Handle handle{ one, true };
-                Handle handle2{ two, true };
+                Handle handle{ one, BORROW };
+                Handle handle2{ two, BORROW };
 
                 handle.swap(handle2);
                 CHECK(handle.get() == two);
