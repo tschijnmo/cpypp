@@ -297,10 +297,29 @@ public:
      *
      */
 
-    void as(long& out)
+    void as(long& out) const
     {
         out = PyLong_AsLong(ref_);
         check_exc();
+    }
+
+    /** Reads the Python object as return value.
+     *
+     * This tiny wrapper over the normal `as` function gives an alternative
+     * interface for reading a Python object into a native C++ value.  Rather
+     * than taking an l-value reference, a pr-value of the given type is
+     * returned.  Error is likewise handled by `Exc_set` C++ exception.
+     *
+     * Note that the type of the Handle object might need to be explicitly
+     * declared to be `Handle` (rather than auto) when this function is used
+     * inside templates.
+     */
+
+    template <typename T> T as() const
+    {
+        T res;
+        as(res);
+        return res;
     }
 
 private:
