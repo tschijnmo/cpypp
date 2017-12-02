@@ -283,6 +283,26 @@ public:
 
     bool is(const Handle& o) const { return get() == o.get(); }
 
+    //
+    // Conversion to native C++ objects.
+    //
+
+    /** Reads the Python object into the given C++ native object.
+     *
+     * Here we provide a set of overloaded functions to parse the content of
+     * the managed Python objects into native C++ objects.  For all these
+     * functions, the target is put as an reference argument so that the
+     * overload can be automatically deduced.  When the conversion fails, the
+     * `Exc_set` exception will be thrown.
+     *
+     */
+
+    void as(long& out)
+    {
+        out = PyLong_AsLong(ref_);
+        check_exc();
+    }
+
 private:
     //
     // Reference counting handling.
