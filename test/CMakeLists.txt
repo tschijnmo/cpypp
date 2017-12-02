@@ -11,6 +11,7 @@ add_executable(testmain
     handle.cpp
     exc_utils.cpp
     number_proto.cpp
+    iter_proto.cpp
     parse_build.cpp
 )
 target_include_directories(testmain
