@@ -38,6 +38,21 @@ namespace cpypp {
 class Exc_set {
 };
 
+/** Checks if error has occurred on the Python stack.
+ *
+ * This function throws the C++ `Exc_set` exception when a Python exception is
+ * detected to have occurred.  In the absence of an Python exception, a value
+ * of zero is returned.
+ */
+
+inline int check_exc()
+{
+    if (PyErr_Occurred()) {
+        throw Exc_set();
+    }
+    return 0;
+}
+
 /** Handles for Python objects.
  *
  * This base class serves as a handle to a Python object.  It can manage Python
