@@ -1,4 +1,4 @@
-/** Tests for the utilities to building Python objects.
+/** Tests for the utilities to building and parsing Python objects.
  */
 
 #include <catch.hpp>
@@ -9,7 +9,8 @@
 
 using namespace cpypp;
 
-TEST_CASE("Utilities can make simple integers", "[Handle][mk]")
+TEST_CASE(
+    "Utilities can make and parse simple integers", "[Handle][build][parse]")
 {
 
     // Here we use simple integer of unity for the testing, since the result
@@ -25,17 +26,25 @@ TEST_CASE("Utilities can make simple integers", "[Handle][mk]")
             auto from_gen = build_handle("i", 1);
             CHECK(from_gen.get() == one);
             CHECK(Py_REFCNT(one) == curr_count + 1);
+
+            long val;
+            from_gen.as(val);
+            CHECK(val == 1);
         }
         CHECK(Py_REFCNT(one) == curr_count);
     }
 
-    SECTION("built-in int can be constructed")
+    SECTION("special integer building function works")
     {
         auto check_build_int = [&](auto v) {
             {
                 auto from_gen = build_int(v);
                 CHECK(from_gen.get() == one);
                 CHECK(Py_REFCNT(one) == curr_count + 1);
+
+                long val;
+                from_gen.as(val);
+                CHECK(val == 1);
             }
             CHECK(Py_REFCNT(one) == curr_count);
         };
