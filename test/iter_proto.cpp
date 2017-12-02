@@ -53,3 +53,27 @@ TEST_CASE("Handles has basic iterator protocol", "[Handle][iterator]")
         }
     }
 }
+
+TEST_CASE("Iterator utilities reports wrong types", "[Handle][iterator]")
+{
+    // A non-iterable and non-iterator integer.
+    auto one = build_int(1l);
+
+    SECTION("reports non-iterable objects")
+    {
+        CHECK_THROWS_AS(one.begin(), Exc_set);
+        PyObject* exc = PyErr_Occurred();
+        REQUIRE(exc != nullptr);
+        CHECK(PyErr_GivenExceptionMatches(exc, PyExc_TypeError));
+        PyErr_Clear();
+    }
+
+    SECTION("reports non-iterator")
+    {
+        CHECK_THROWS_AS(Iter_handle(one.get_new()), Exc_set);
+        PyObject* exc = PyErr_Occurred();
+        REQUIRE(exc != nullptr);
+        CHECK(PyErr_GivenExceptionMatches(exc, PyExc_TypeError));
+        PyErr_Clear();
+    }
+}
