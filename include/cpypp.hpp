@@ -207,6 +207,21 @@ public:
 
     PyObject* get() const noexcept { return ref_; }
 
+    /** Gets the handled pointer with a new reference created.
+     *
+     * This method returns the pointer to the underlying object and increments
+     * its reference count for non-empty handles.  This can be useful for
+     * working with functions stealing references from its arguments.
+     */
+
+    PyObject* get_new() const noexcept
+    {
+        if (ref_ != nullptr) {
+            Py_INCREF(ref_);
+        }
+        return ref_;
+    }
+
     /** Swaps the managed Python object with another handle.
      */
 

@@ -110,6 +110,19 @@ TEST_CASE("Handles correctly manages reference counts", "[Handle]")
             CHECK(!handle);
         }
 
+        SECTION("can create new references")
+        {
+            {
+                Handle handle(one);
+
+                CHECK(handle.get_new() == one);
+                CHECK(handle.get() == one);
+                CHECK(Py_REFCNT(one) == init_count + 1);
+            }
+            CHECK(Py_REFCNT(one) == init_count);
+            Py_DECREF(one);
+        }
+
         SECTION("can release ownership")
         {
             {
@@ -326,6 +339,20 @@ TEST_CASE("Handles correctly manages reference counts", "[Handle]")
         {
             Handle handle(nullptr, BORROW, true);
             CHECK(!handle);
+        }
+
+        SECTION("can create new references")
+        {
+            {
+                Handle handle(one, BORROW);
+                check_ref();
+
+                CHECK(handle.get_new() == one);
+                CHECK(handle.get() == one);
+                CHECK(Py_REFCNT(one) == init_count1 + 1);
+            }
+            CHECK(Py_REFCNT(one) == init_count1 + 1);
+            Py_DECREF(one);
         }
 
         SECTION("can release ownership")
