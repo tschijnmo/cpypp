@@ -30,6 +30,7 @@ TEST_CASE(
             long val;
             from_gen.as(val);
             CHECK(val == 1);
+            CHECK(from_gen.as<long>() == 1);
         }
         CHECK(Py_REFCNT(one) == curr_count);
     }
@@ -38,13 +39,14 @@ TEST_CASE(
     {
         auto check_build_int = [&](auto v) {
             {
-                auto from_gen = build_int(v);
+                Handle from_gen = build_int(v);
                 CHECK(from_gen.get() == one);
                 CHECK(Py_REFCNT(one) == curr_count + 1);
 
                 long val;
                 from_gen.as(val);
                 CHECK(val == 1);
+                CHECK(from_gen.as<long>() == 1);
             }
             CHECK(Py_REFCNT(one) == curr_count);
         };
