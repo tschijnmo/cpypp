@@ -21,7 +21,7 @@ TEST_CASE("Handles maps basic number protocol", "[Handle][Number]")
     {
         CHECK(handle1.check_number());
         Handle empty{};
-        CHECK_FALSE(!empty.check_number());
+        CHECK_FALSE(empty.check_number());
         auto tup = build_handle("ii", 1, 2);
         CHECK_FALSE(tup.check_number());
     }
