@@ -10,7 +10,7 @@ add_executable(testmain
     test.cpp
     handle.cpp
     number_proto.cpp
-    mk_utils.cpp
+    parse_build.cpp
 )
 target_include_directories(testmain
     PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
