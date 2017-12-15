@@ -214,6 +214,9 @@ public:
      * This method returns the pointer to the underlying object and increments
      * its reference count for non-empty handles.  This can be useful for
      * working with functions stealing references from its arguments.
+     *
+     * This method can also be called as a function, which is especially useful
+     * to take references from R-values of Handles.
      */
 
     PyObject* get_new() const noexcept
@@ -222,6 +225,16 @@ public:
             Py_INCREF(ref_);
         }
         return ref_;
+    }
+
+    friend PyObject* get_new(const Handle& handle) noexcept
+    {
+        return handle.get_new();
+    }
+
+    friend PyObject* get_new(Handle&& handle) noexcept
+    {
+        return handle.if_borrow() ? handle.get_new() : handle.release();
     }
 
     /** Swaps the managed Python object with another handle.
