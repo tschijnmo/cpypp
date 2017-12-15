@@ -136,6 +136,26 @@ TEST_CASE("Handles correctly manages reference counts", "[Handle]")
             Py_DECREF(one); // Decrement of RC for the handle.
         }
 
+        SECTION("can be extracted a new reference")
+        {
+            {
+                Handle handle(one);
+                auto ref = get_new(handle);
+                CHECK(ref == one);
+                CHECK(handle.get() == one);
+                CHECK(Py_REFCNT(one) == init_count + 1);
+                Py_DECREF(one);
+
+                ref = get_new(std::move(handle));
+                CHECK(ref == one);
+                CHECK(!handle);
+                CHECK(Py_REFCNT(one) == init_count);
+            }
+
+            Py_DECREF(one);
+            CHECK(Py_REFCNT(one) == init_count - 1);
+        }
+
         SECTION("has correct assignment assignments")
         {
             PyObject* two = Py_BuildValue("i", 2);
@@ -363,6 +383,32 @@ TEST_CASE("Handles correctly manages reference counts", "[Handle]")
                 CHECK(handle.release() == one);
                 check_ref();
             }
+            check_ref();
+        }
+
+        SECTION("can be extracted a new reference")
+        {
+            {
+                Handle handle(one, BORROW);
+                check_ref();
+
+                auto ref = get_new(handle);
+                CHECK(ref == one);
+                CHECK(handle.get() == one);
+                CHECK(Py_REFCNT(one) == init_count1 + 1);
+                Py_DECREF(one);
+                check_ref();
+
+                // Moving from borrowing handle does not touch the handle
+                // itself.
+                ref = get_new(std::move(handle));
+                CHECK(ref == one);
+                CHECK(handle.get() == one);
+                CHECK(Py_REFCNT(one) == init_count1 + 1);
+                Py_DECREF(one);
+                check_ref();
+            }
+
             check_ref();
         }
 
