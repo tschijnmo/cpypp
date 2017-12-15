@@ -17,6 +17,8 @@
 #include <cassert>
 #include <utility>
 
+#include <Python.h>
+
 namespace cpypp {
 
 /** C++ exception signalling that a Python exception has been set.
