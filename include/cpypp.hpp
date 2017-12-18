@@ -114,7 +114,7 @@ public:
     /** Constructs an empty handle by default.
      */
 
-    Handle()
+    Handle() noexcept
         : ref_{ nullptr }
         , if_borrow_{ true }
     {
@@ -133,7 +133,7 @@ public:
      * Note that borrowed handles also gives borrowed handles.
      */
 
-    Handle(const Handle& other)
+    Handle(const Handle& other) noexcept
         : ref_{ other.ref_ }
         , if_borrow_{ other.if_borrow_ }
     {
@@ -143,7 +143,7 @@ public:
     /** Constructs the handle by moving from another one.
      */
 
-    Handle(Handle&& other)
+    Handle(Handle&& other) noexcept
         : ref_{ other.ref_ }
         , if_borrow_{ other.if_borrow_ }
     {
@@ -322,7 +322,7 @@ public:
     /** Compares the identity of the underlying object.
      */
 
-    bool is(const Handle& o) const { return get() == o.get(); }
+    bool is(const Handle& o) const noexcept { return get() == o.get(); }
 
     //
     // Iterator protocol
@@ -344,7 +344,7 @@ public:
      * default one-past-end sentinel iterator of `Iter_handle` type.
      */
 
-    Iter_handle end() const;
+    Iter_handle end() const noexcept;
 
     //
     // Conversion to native C++ objects.
@@ -409,7 +409,7 @@ private:
     /** Decrements the reference count for owning reference to a non-null.
      */
 
-    void decr_ref()
+    void decr_ref() noexcept
     {
         if (!if_borrow_) {
             Py_XDECREF(ref_);
@@ -419,7 +419,7 @@ private:
     /** Increments the reference count only for owning reference.
      */
 
-    void incr_ref()
+    void incr_ref() noexcept
     {
         if (!if_borrow_) {
             Py_INCREF(ref_);
@@ -516,7 +516,7 @@ public:
      * By default, the past-the-end sentinel is constructed.
      */
 
-    Iter_handle()
+    Iter_handle() noexcept
         : Handle{}
         , val_{}
     {
@@ -552,7 +552,8 @@ public:
      * sentinel.  Otherwise an assertion will fail.
      */
 
-    friend bool operator!=(const Iter_handle& o1, const Iter_handle& o2)
+    friend bool operator!=(
+        const Iter_handle& o1, const Iter_handle& o2) noexcept
     {
         // One of them has to be a sentinel.
         assert(!o1 != !o2);
@@ -565,7 +566,8 @@ public:
         }
     }
 
-    friend bool operator==(const Iter_handle& o1, const Iter_handle& o2)
+    friend bool operator==(
+        const Iter_handle& o1, const Iter_handle& o2) noexcept
     {
         return !(o1 != o2);
     }
@@ -618,7 +620,7 @@ inline Iter_handle Handle::begin() const
     return Iter_handle(PyObject_GetIter(ref_));
 }
 
-inline Iter_handle Handle::end() const { return Iter_handle{}; }
+inline Iter_handle Handle::end() const noexcept { return Iter_handle{}; }
 }
 
 #endif
