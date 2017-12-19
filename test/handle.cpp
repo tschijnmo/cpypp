@@ -461,6 +461,22 @@ TEST_CASE("Handles correctly manages reference counts", "[Handle]")
             check_ref();
         }
 
+        SECTION("can read in the Python object to handle")
+        {
+            {
+                Handle handle{};
+                CHECK(!handle);
+
+                *handle.read() = one;
+
+                CHECK(handle.get() == one);
+                CHECK(handle.if_borrow());
+                CHECK(handle);
+                check_ref();
+            }
+            check_ref();
+        }
+
         SECTION("can be copy assigned with no managed object")
         {
             {
