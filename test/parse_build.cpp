@@ -23,7 +23,7 @@ TEST_CASE(
     SECTION("the generic function works")
     {
         {
-            auto from_gen = build_handle("i", 1);
+            Handle from_gen("i", 1);
             CHECK(from_gen.get() == one);
             CHECK(Py_REFCNT(one) == curr_count + 1);
 
@@ -39,7 +39,7 @@ TEST_CASE(
     {
         auto check_build_int = [&](auto v) {
             {
-                Handle from_gen = build_int(v);
+                Handle from_gen(v);
                 CHECK(from_gen.get() == one);
                 CHECK(Py_REFCNT(one) == curr_count + 1);
 

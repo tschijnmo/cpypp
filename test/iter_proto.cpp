@@ -16,14 +16,14 @@ using namespace cpypp;
 TEST_CASE("Handles has basic iterator protocol", "[Handle][iterator]")
 {
     // A simple list of integers.
-    auto one_two_three = build_handle("[iii]", 1, 2, 3);
+    Handle one_two_three("[iii]", 1, 2, 3);
 
     SECTION("can be correctly iterated over with unary ending predicate")
     {
         long curr = 1;
         for (auto i = one_two_three.begin(); i.has_val(); ++i) {
             check_exc();
-            CHECK(*i == build_int(curr));
+            CHECK(*i == Handle(curr));
             check_exc();
             ++curr;
         }
@@ -57,7 +57,7 @@ TEST_CASE("Handles has basic iterator protocol", "[Handle][iterator]")
 TEST_CASE("Iterator utilities reports wrong types", "[Handle][iterator]")
 {
     // A non-iterable and non-iterator integer.
-    auto one = build_int(1l);
+    Handle one(1l);
 
     SECTION("reports non-iterable objects")
     {

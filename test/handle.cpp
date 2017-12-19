@@ -554,9 +554,9 @@ TEST_CASE("Handles support comparison operations", "[Handle][Comparison]")
     // In order to make sure that we actually delegate to the Python comparison
     // operation, simple lists with different identities are used.
 
-    auto small = build_handle("[ii]", 1, 1);
-    auto small2 = build_handle("[ii]", 1, 1);
-    auto big = build_handle("[ii]", 1, 2);
+    Handle small("[ii]", 1, 1);
+    Handle small2("[ii]", 1, 1);
+    Handle big("[ii]", 1, 2);
 
     SECTION("The handled objects has different identity")
     {
@@ -612,7 +612,7 @@ TEST_CASE("Handles support comparison operations", "[Handle][Comparison]")
 
     SECTION("Reports invalid comparisons")
     {
-        auto one = build_int(1l);
+        Handle one(1l);
         CHECK_THROWS_AS(small < one, Exc_set);
         PyObject* exc = PyErr_Occurred();
         REQUIRE(exc != nullptr);
