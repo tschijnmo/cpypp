@@ -130,8 +130,10 @@ TEST_CASE("Handles correctly manages reference counts", "[Handle]")
                 Handle handle(one);
 
                 CHECK(handle.release() == one);
-                CHECK(!handle);
                 CHECK(Py_REFCNT(one) == init_count);
+
+                CHECK(handle.get() == one);
+                CHECK(handle.if_borrow());
             }
             CHECK(Py_REFCNT(one) == init_count);
             Py_DECREF(one); // Decrement of RC for the handle.
@@ -386,7 +388,10 @@ TEST_CASE("Handles correctly manages reference counts", "[Handle]")
                 Handle handle(one, BORROW);
                 check_ref();
                 CHECK(handle.release() == one);
-                check_ref();
+                CHECK(Py_REFCNT(one) == init_count1 + 1);
+                Py_DECREF(one);
+
+                CHECK(handle.get() == one);
             }
             check_ref();
         }
