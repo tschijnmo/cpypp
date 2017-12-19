@@ -94,7 +94,8 @@ TEST_CASE("Handles correctly manages reference counts", "[Handle]")
                 CHECK(!handle2.if_borrow());
                 CHECK(Py_REFCNT(one) == init_count);
 
-                CHECK(!handle);
+                CHECK(handle.get() == one);
+                CHECK(handle.if_borrow());
             }
             CHECK(Py_REFCNT(one) == init_count - 1);
         }
@@ -148,7 +149,8 @@ TEST_CASE("Handles correctly manages reference counts", "[Handle]")
 
                 ref = get_new(std::move(handle));
                 CHECK(ref == one);
-                CHECK(!handle);
+                CHECK(handle.get() == one);
+                CHECK(handle.if_borrow());
                 CHECK(Py_REFCNT(one) == init_count);
             }
 
@@ -194,7 +196,8 @@ TEST_CASE("Handles correctly manages reference counts", "[Handle]")
                     handle = std::move(handle2);
                     CHECK(handle.get() == two);
                     CHECK(!handle.if_borrow());
-                    CHECK(!handle2);
+                    CHECK(handle2.get() == two);
+                    CHECK(handle2.if_borrow());
                     CHECK(Py_REFCNT(one) == init_count - 1);
                     CHECK(Py_REFCNT(two) == init_count2);
                 }
@@ -246,7 +249,8 @@ TEST_CASE("Handles correctly manages reference counts", "[Handle]")
                     CHECK(handle.get() == two);
                     CHECK(!handle.if_borrow());
                     CHECK(Py_REFCNT(two) == init_count2);
-                    CHECK(!handle2);
+                    CHECK(handle2.get() == two);
+                    CHECK(handle2.if_borrow());
                 }
 
                 CHECK(Py_REFCNT(two) == init_count2 - 1);
@@ -345,7 +349,8 @@ TEST_CASE("Handles correctly manages reference counts", "[Handle]")
                 CHECK(handle2.if_borrow());
                 check_ref();
 
-                CHECK(!handle);
+                CHECK(handle.get() == one);
+                CHECK(handle.if_borrow());
             }
             check_ref();
         }
@@ -440,7 +445,8 @@ TEST_CASE("Handles correctly manages reference counts", "[Handle]")
                 handle = std::move(handle2);
                 CHECK(handle.get() == two);
                 CHECK(handle.if_borrow());
-                CHECK(!handle2);
+                CHECK(handle2.get() == two);
+                CHECK(handle2.if_borrow());
                 check_ref();
             }
 
@@ -505,7 +511,8 @@ TEST_CASE("Handles correctly manages reference counts", "[Handle]")
                 handle = std::move(handle2);
                 CHECK(handle.get() == two);
                 CHECK(handle.if_borrow());
-                CHECK(!handle2);
+                CHECK(handle2.get() == two);
+                CHECK(handle2.if_borrow());
                 check_ref();
             }
 
