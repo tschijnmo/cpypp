@@ -256,7 +256,7 @@ public:
 
     friend PyObject* get_new(Handle&& handle) noexcept
     {
-        return handle.if_borrow() ? handle.get_new() : handle.release();
+        return handle.release();
     }
 
     /** Swaps the managed Python object with another handle.
@@ -270,17 +270,29 @@ public:
 
     /** Releases the ownership of the managed object.
      *
-     * If no object is handled, a null pointer is going to be returned.  Note
-     * that this method also just returns the management object for borrowing
-     * handles without any special treatment.
+     * If no object is handled, a null pointer is going to be returned.  For
+     * owning handles, a new reference to the handled object is going to be
+     * returned, with the handle itself turned into an borrowing handle to the
+     * same object.  For borrowing handles, the handle will not be touched,
+     * just a new reference is to be returned.
+     *
+     * Note that whenever the handle is not empty, a new reference is always
+     * returned by this method.  Compared with `get_new` method, this method
+     * can be used when the handle no longer need to own a reference.  At the
+     * same time, the `get_new` friend function can dispatch to either this
+     * method or `get_new` method differently for Handle R-values and L-values.
      */
 
     PyObject* release() noexcept
     {
-        auto ref = ref_;
-        ref_ = nullptr;
-        if_borrow_ = true;
-        return ref;
+        if (ref_ != nullptr) {
+            if (if_borrow_) {
+                Py_INCREF(ref_);
+            } else {
+                if_borrow_ = true;
+            }
+        }
+        return ref_;
     }
 
     //
