@@ -201,6 +201,22 @@ public:
         set(ref, own, allow_null);
     }
 
+    /** Gets a pointer to PyObject pointer to read in a borrowed reference.
+     *
+     * This method is for the convenience of working with CPython API functions
+     * like PyArg_ParseTuple.  The returned pointer can be directly given to
+     * this kind of CPython API functions to read the object to be handled in.
+     * Note that this method can only be used to create borrowing references.
+     */
+
+    PyObject** read() noexcept
+    {
+        decr_ref();
+        ref_ = nullptr;
+        if_borrow_ = true;
+        return &ref_;
+    }
+
     /** Gets the pointer to the Python object handled.
      *
      * This method simply returns the pointer and nothing is performed on the
