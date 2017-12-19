@@ -141,13 +141,17 @@ public:
     }
 
     /** Constructs the handle by moving from another one.
+     *
+     * Note that the handled that is moved from is not cleared to be empty, but
+     * rather turned into a borrowing handle if it is not a borrowing one
+     * already.
      */
 
     Handle(Handle&& other) noexcept
         : ref_{ other.ref_ }
         , if_borrow_{ other.if_borrow_ }
     {
-        other.release();
+        other.if_borrow_ = true;
     }
 
     /** Makes assignment from other object handle.
@@ -175,7 +179,9 @@ public:
         decr_ref();
 
         if_borrow_ = other.if_borrow();
-        ref_ = other.release();
+        ref_ = other.get();
+
+        other.if_borrow_ = true;
 
         return *this;
     }
