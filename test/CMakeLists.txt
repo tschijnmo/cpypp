@@ -13,6 +13,7 @@ add_executable(testmain
     number_proto.cpp
     iter_proto.cpp
     parse_build.cpp
+    struct_sequence.cpp
 )
 target_include_directories(testmain
     PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
