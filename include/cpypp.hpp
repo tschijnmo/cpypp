@@ -231,6 +231,14 @@ public:
 
     PyObject* get() const noexcept { return ref_; }
 
+    /** Casts to a raw Python object pointer.
+     *
+     * This can be helpful for working with CPython API functions or even cpypp
+     * functions taking a borrowed reference to a Python object just as input.
+     */
+
+    operator PyObject*() const noexcept { return get(); }
+
     /** Gets the handled pointer with a new reference created.
      *
      * This method returns the pointer to the underlying object and increments
