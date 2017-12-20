@@ -294,6 +294,30 @@ public:
     }
 
     //
+    // Type protocol
+    //
+    // WIP: These methods are not fully tested yet.
+    //
+
+    /** Checks if the handled object is a type object.
+     */
+
+    bool check_type() const noexcept { return PyType_Check(get()); }
+
+    /** Gets the pointer to the handled type.
+     *
+     * Note that assertion will fail if the handle is not holding an actual
+     * type object.  It is the responsiblity of the caller to check before
+     * calling this method.
+     */
+
+    PyTypeObject* as_type() const noexcept
+    {
+        assert(*this && check_type());
+        return (PyTypeObject*)get();
+    }
+
+    //
     // Number protocol
     //
 
