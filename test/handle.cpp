@@ -647,3 +647,30 @@ TEST_CASE("Handles support comparison operations", "[Handle][Comparison]")
         PyErr_Clear();
     }
 }
+
+TEST_CASE("Handles can manipulate attributes", "[Handle][Attr]")
+{
+    SECTION("can get attributes")
+    {
+        Handle one(1l);
+        Handle real_part = one.getattr("real");
+
+        // Singleton requirement of the initial intergers.
+        CHECK(real_part.is(one));
+    }
+
+    SECTION("can mutate attributes")
+    {
+        Handle one(1l);
+        Handle obj(PyModule_New("dummymodule"));
+        obj.setattr("aa", one);
+        REQUIRE(obj.getattr("aa").is(one));
+
+        obj.delattr("aa");
+        CHECK_THROWS_AS(obj.getattr("aa"), Exc_set);
+        PyObject* exc = PyErr_Occurred();
+        REQUIRE(exc != nullptr);
+        CHECK(PyErr_GivenExceptionMatches(exc, PyExc_AttributeError));
+        PyErr_Clear();
+    }
+}
