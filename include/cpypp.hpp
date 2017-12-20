@@ -738,6 +738,116 @@ inline Iter_handle Handle::begin() const
 
 inline Iter_handle Handle::end() const noexcept { return Iter_handle{}; }
 
+//
+// Utility for static type objects
+//
+
+/** Static types.
+ *
+ * This open struct is aimed to facilitate the handling of type objects stored
+ * statically.  So it is not a subclass of the main Handle class.
+ */
+
+struct Static_type {
+    /** The actual Python type object.
+     */
+
+    PyTypeObject tp;
+
+    /** If the type object is ready to be used.
+     *
+     * Normally the initialization of the static type object cannot happen
+     * before the actual starting of the entire Python stack.  So we cannot put
+     * all initialization processes inside a constructor and rely on C++ static
+     * initialization facility.  After the execution which makes the type
+     * ready, this boolean can be set to true so that the same execution can be
+     * skipped later.
+     */
+
+    bool is_ready;
+
+    /** Constructs from a given type object.
+     *
+     * Normally the type object template can be just given as a
+     * brance-init-list for initializing he CPython type object.  The
+     * readiness is set to false by default.
+     */
+
+    Static_type(const PyTypeObject& tp)
+        : tp(tp)
+        , is_ready(false)
+    {
+    }
+
+    /** Constructs an empty object.
+     *
+     * The result will be considered to be not ready by default.
+     */
+
+    Static_type()
+        : is_ready(false)
+    {
+    }
+
+    /** Initializes the static type as a struct sequence.
+     *
+     * Due to CPython issue28709, struct sequence types cannot be put onto the
+     * heap with ease.  By using this method, struct sequence type can be
+     * constructed easily on static memory.
+     */
+
+    void init(PyStructSequence_Desc& desc)
+    {
+        if (is_ready) {
+            return;
+        }
+        if (PyStructSequence_InitType2(&tp, &desc) == -1) {
+            throw Exc_set{};
+        }
+        is_ready = true;
+        return;
+    }
+};
+
+//
+// Struct sequence utilities
+//
+
+/** Handles for CPython struct sequence objects.
+ */
+
+class Struct_sequence : public Handle {
+public:
+    /** Constructs a struct sequence from the given Python type object.
+     *
+     * Note that it is the responsiblity of the caller to make sure that the
+     * given type is indeed a struct sequence type.
+     */
+
+    Struct_sequence(PyTypeObject& tp)
+        : Handle(PyStructSequence_New(&tp))
+    {
+    }
+
+    /** Constructs an new object from the given static type.
+     */
+
+    Struct_sequence(Static_type& tp)
+        : Struct_sequence(tp.tp)
+    {
+    }
+
+    /** Sets the item at a given position.
+     */
+
+    template <typename T> void setitem(Py_ssize_t pos, T&& v)
+    {
+        PyStructSequence_SetItem(
+            get(), pos, cpypp::get_new(std::forward<T>(v)));
+        return;
+    }
+};
+
 // End of namespace cpypp
 }
 
