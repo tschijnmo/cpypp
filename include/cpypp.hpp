@@ -362,9 +362,12 @@ public:
     bool operator>=(const Handle& o) const { return compare<Py_GE>(o); }
 
     /** Compares the identity of the underlying object.
+     *
+     * Because of the implicit cast rules, this method can be used for the
+     * comparison with either handles or raw pointers.
      */
 
-    bool is(const Handle& o) const noexcept { return get() == o.get(); }
+    bool is(const PyObject* o) const noexcept { return get() == o; }
 
     //
     // Attribute manipulation
