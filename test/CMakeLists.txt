@@ -13,6 +13,7 @@ add_executable(testmain
     number_proto.cpp
     iter_proto.cpp
     parse_build.cpp
+    tuple.cpp
     module.cpp
     struct_sequence.cpp
 )
