@@ -257,16 +257,6 @@ public:
         return ref_;
     }
 
-    friend PyObject* get_new(const Handle& handle) noexcept
-    {
-        return handle.get_new();
-    }
-
-    friend PyObject* get_new(Handle&& handle) noexcept
-    {
-        return handle.release();
-    }
-
     /** Swaps the managed Python object with another handle.
      */
 
@@ -287,7 +277,7 @@ public:
      * Note that whenever the handle is not empty, a new reference is always
      * returned by this method.  Compared with `get_new` method, this method
      * can be used when the handle no longer need to own a reference.  At the
-     * same time, the `get_new` friend function can dispatch to either this
+     * same time, the `get_new` non-member function can dispatch to either this
      * method or `get_new` method differently for Handle R-values and L-values.
      */
 
@@ -563,6 +553,23 @@ private:
 
     bool if_borrow_;
 };
+
+//
+// Utility non-member handle functions
+//
+
+/** Gets a new reference from a handle.
+ *
+ * When applied on R-values of owning handles, it could save two bumpings of
+ * the reference count.
+ */
+
+inline PyObject* get_new(const Handle& handle) noexcept
+{
+    return handle.get_new();
+}
+
+inline PyObject* get_new(Handle&& handle) noexcept { return handle.release(); }
 
 //
 // Utilities for the iterator protocol
