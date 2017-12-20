@@ -367,6 +367,42 @@ public:
     bool is(const Handle& o) const noexcept { return get() == o.get(); }
 
     //
+    // Attribute manipulation
+    //
+
+    /** Gets an attribute for the object.
+     *
+     * Exception will be set when failure occurs during getting the attribute.
+     */
+
+    Handle getattr(const char* attr)
+    {
+        return Handle{ PyObject_GetAttrString(get(), attr) };
+    }
+
+    /** Sets an attribute for the handled object.
+     *
+     * This methods takes an non-owning reference to the object to be set as
+     * the given attribute.
+     */
+
+    void setattr(const char* attr, PyObject* v)
+    {
+        if (PyObject_SetAttrString(get(), attr, v) != 0) {
+            throw Exc_set{};
+        }
+        return;
+    }
+
+    void delattr(const char* attr)
+    {
+        if (PyObject_DelAttrString(get(), attr) != 0) {
+            throw Exc_set{};
+        }
+        return;
+    }
+
+    //
     // Iterator protocol
     //
 
