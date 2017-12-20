@@ -384,6 +384,15 @@ public:
     bool is(const PyObject* o) const noexcept { return get() == o; }
 
     //
+    // For sequence or container protocol and types
+    //
+
+    /** Checks if the handled object is a tuple instance.
+     */
+
+    bool check_tuple() const noexcept { return PyTuple_Check(get()); }
+
+    //
     // Attribute manipulation
     //
 
@@ -742,6 +751,36 @@ inline Iter_handle Handle::begin() const
 }
 
 inline Iter_handle Handle::end() const noexcept { return Iter_handle{}; }
+
+//
+// Utility for tuples
+//
+
+/** Handles for tuples.
+ *
+ * This class is mostly designed for creating new tuples rather than reading
+ * existing tuples, for which the generic sequence or iterable protocol is
+ * better used.
+ */
+
+class Tuple : public Handle {
+public:
+    /** Constructs a tuple of the given length.
+     */
+
+    Tuple(Py_ssize_t len)
+        : Handle(PyTuple_New(len))
+    {
+    }
+
+    /** Sets an item for the tuple at the given position.
+     */
+
+    template <typename T> void setitem(Py_ssize_t pos, T&& v)
+    {
+        PyTuple_SET_ITEM(get(), pos, cpypp::get_new(std::forward<T>(v)));
+    }
+};
 
 //
 // Utility for modules
