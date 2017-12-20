@@ -295,6 +295,21 @@ TEST_CASE("Handles correctly manages reference counts", "[Handle]")
             Py_DECREF(two);
         }
 
+        SECTION("can be implicitly cast into raw pointer")
+        {
+            {
+                Handle handle(one);
+
+                auto check_cast
+                    = [&](PyObject* to_check) { CHECK(to_check == one); };
+
+                check_cast(handle);
+
+                CHECK(Py_REFCNT(one) == init_count);
+            }
+            CHECK(Py_REFCNT(one) == init_count - 1);
+        }
+
         Py_DECREF(one);
     }
 
