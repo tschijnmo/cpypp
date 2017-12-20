@@ -617,6 +617,11 @@ inline PyObject* get_new(Handle&& handle) noexcept { return handle.release(); }
  * construction of objects of this class, although this class can be used
  * directly on any Python iterators from other sources.
  *
+ * Note that different from specialized handles for things like modules or
+ * tuples, here the basic handle interface is not exposed.  The behaviour
+ * differs a lot from other Python object handles for the sake of better
+ * interoperability with C++ looping idioms.  This is also a reason for its
+ * different naming.
  */
 
 class Iter_handle : private Handle {
