@@ -739,6 +739,39 @@ inline Iter_handle Handle::begin() const
 inline Iter_handle Handle::end() const noexcept { return Iter_handle{}; }
 
 //
+// Utility for modules
+//
+
+class Module : public Handle {
+public:
+    /** Constructs a handle managing the given module.
+     *
+     * Since normally when working with modules in extentions, especially for
+     * the new multi-phase initialization, we only need to work with a borrowed
+     * reference to a module.  So different from the corresponding constructor
+     * of the base class, this constructor does not steal a reference by
+     * default.
+     */
+
+    Module(PyObject* mod, Own own = BORROW, bool allow_null = false)
+        : Handle(mod, own, allow_null)
+    {
+    }
+
+    /** Adds an object to the module.
+     */
+
+    template <typename T> void add_object(const char* name, T&& v)
+    {
+        if (PyModule_AddObject(get(), name, cpypp::get_new(std::forward<T>(v)))
+            != 0) {
+            throw Exc_set{};
+        }
+        return;
+    }
+};
+
+//
 // Utility for static type objects
 //
 
