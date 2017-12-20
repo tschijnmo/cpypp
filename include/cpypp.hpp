@@ -706,6 +706,8 @@ inline Iter_handle Handle::begin() const
 }
 
 inline Iter_handle Handle::end() const noexcept { return Iter_handle{}; }
+
+// End of namespace cpypp
 }
 
 #endif
