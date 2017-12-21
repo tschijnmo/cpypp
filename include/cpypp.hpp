@@ -817,31 +817,24 @@ inline Iter_handle Handle::end() const noexcept { return Iter_handle{}; }
 
 /** Static types.
  *
- * This open struct is aimed to facilitate the handling of type objects stored
+ * This type is aimed to facilitate the handling of type objects stored
  * statically.  So it is not a subclass of the main Handle class.
+ *
+ * Normally some initialization of the static type object cannot happen before
+ * the actual starting of the entire Python stack.  So we cannot put all
+ * initialization processes inside a constructor and rely on C++ static
+ * initialization facility.  So internally, along with the type object, we also
+ * have a boolean giving if the type object is ready to be used.  And we have a
+ * few methods to make the type ready based on different kinds of information.
+ * For all of them, if the type has been made ready before, nothing is
+ * performed and a false will be returned.  Otherwise, the initialization by
+ * the method is executed and the type starts to be considered to be ready.
+ *
+ * TODO: This utility is not yet fully designed or developed.
  */
 
-// TODO: This utility is not yet developed or tested for anything other than
-// handling struct sequences.
-
-struct Static_type {
-    /** The actual Python type object.
-     */
-
-    PyTypeObject tp;
-
-    /** If the type object is ready to be used.
-     *
-     * Normally the initialization of the static type object cannot happen
-     * before the actual starting of the entire Python stack.  So we cannot put
-     * all initialization processes inside a constructor and rely on C++ static
-     * initialization facility.  After the execution which makes the type
-     * ready, this boolean can be set to true so that the same execution can be
-     * skipped later.
-     */
-
-    bool is_ready;
-
+class Static_type {
+public:
     /** Constructs from a given type object.
      *
      * Normally the type object template can be just given as a
@@ -850,8 +843,7 @@ struct Static_type {
      */
 
     Static_type(const PyTypeObject& tp)
-        : tp(tp)
-        , is_ready(false)
+        : tp_(tp)
     {
     }
 
@@ -860,29 +852,91 @@ struct Static_type {
      * The result will be considered to be not ready by default.
      */
 
-    Static_type()
-        : is_ready(false)
+    Static_type() {}
+
+    /** Tests if the current static type is ready.
+     */
+
+    bool is_ready() const noexcept { return is_ready_; }
+
+    /** Gets the pointer to the underlying type.
+     */
+
+    PyTypeObject* tp() noexcept { return &tp_; }
+
+    /** Get the pointer to the underlying type as object pointers.
+     */
+
+    PyObject* tp_obj() noexcept { return (PyObject*)tp(); }
+
+    /** Gets a handle for the underlying type object.
+     *
+     * This can be helpful for working with other cpypp functions expecting a
+     * handle.
+     */
+
+    Handle get_handle(bool if_new = false)
     {
+        return { tp_obj(), if_new ? NEW : BORROW };
+    }
+
+    /** Makes the underlying type ready.
+     *
+     * This is the most general initialization method.  The given callable will
+     * be called with a pointer to the type object for the initialization
+     * operations.  Then the CPython `PyType_Ready` function will be called.
+     *
+     * If the type has already been made ready, nothing will be done and a
+     * false will be returned.  Otherwise it will be made ready with a true
+     * returned.
+     */
+
+    template <typename T> bool make_ready(T action)
+    {
+        if (is_ready_) {
+            return false;
+        }
+
+        action(&tp_);
+        if (PyType_Ready(&tp_) < 0) {
+            throw Exc_set{};
+        }
+
+        is_ready_ = true;
+        return true;
     }
 
     /** Initializes the static type as a struct sequence.
      *
      * Due to CPython issue28709, struct sequence types cannot be put onto the
-     * heap with ease.  By using this method, struct sequence type can be
+     * heap with ease.  By using this method, struct sequence types can be
      * constructed easily on static memory.
      */
 
-    void init(PyStructSequence_Desc& desc)
+    bool make_ready(PyStructSequence_Desc& desc)
     {
-        if (is_ready) {
-            return;
+        if (is_ready_) {
+            return false;
         }
-        if (PyStructSequence_InitType2(&tp, &desc) == -1) {
+
+        if (PyStructSequence_InitType2(&tp_, &desc) == -1) {
             throw Exc_set{};
         }
-        is_ready = true;
-        return;
+
+        is_ready_ = true;
+        return true;
     }
+
+private:
+    /** The actual Python type object.
+     */
+
+    PyTypeObject tp_;
+
+    /** If the type object is ready to be used.
+     */
+
+    bool is_ready_ = false;
 };
 
 //
@@ -930,8 +984,8 @@ public:
      * given type is indeed a struct sequence type.
      */
 
-    Struct_sequence(PyTypeObject& tp)
-        : Handle(PyStructSequence_New(&tp))
+    Struct_sequence(PyTypeObject* tp)
+        : Handle(PyStructSequence_New(tp))
     {
     }
 
@@ -939,7 +993,7 @@ public:
      */
 
     Struct_sequence(Static_type& tp)
-        : Struct_sequence(tp.tp)
+        : Struct_sequence(tp.tp())
     {
     }
 

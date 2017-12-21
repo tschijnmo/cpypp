@@ -1,4 +1,4 @@
-/** Tests for the utility for tuples.
+/** Tests for the utility for sequence objects.
  */
 
 #include <catch.hpp>
@@ -36,8 +36,8 @@ static Static_type tp{};
 TEST_CASE("Struct sequence can be constructed",
     "[Handle][Struct_sequence][Static_type]")
 {
-    tp.init(desc);
-    CHECK(tp.is_ready);
+    tp.make_ready(desc);
+    CHECK(tp.is_ready());
 
     Struct_sequence obj(tp);
     obj.setitem(0, Handle(1l));

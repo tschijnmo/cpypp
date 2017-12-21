@@ -14,6 +14,7 @@ add_executable(testmain
     objectprotocol.cpp
     numberprotocol.cpp
     iteratorprotocol.cpp
+    fundamentalobjects.cpp
     numericobjects.cpp
     sequenceobjects.cpp
     otherobjects.cpp
