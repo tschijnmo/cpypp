@@ -77,7 +77,7 @@ enum Own { STEAL, BORROW, NEW };
 /** Handles for Python objects.
  *
  * This base class serves as a handle to a Python object.  It can manage Python
- * reference counts automatically and expose some Python object protocols.
+ * reference counts automatically and expose some Python object operations.
  *
  * The handle can be either borrowing or owning.  For borrowing handles, the
  * reference count of the underlying object is not touched.  For owning
@@ -93,9 +93,8 @@ public:
 
     /** Constructs a handle for an object.
      *
-     * @param ref The pointer to the Python object.  When a handle owning the
-     * reference is to be created, this constructor *steals the reference* to
-     * the object.
+     * @param ref The pointer to the Python object.  By default, it *steals the
+     * reference* to the object.
      *
      * @param own How the ownership of the reference is to be treated, as
      * explained in `Own`.
@@ -171,6 +170,9 @@ public:
     }
 
     /** Makes assignment by moving from other object handle.
+     *
+     * Similar to move initialization, here the handle that is moved from is
+     * only turned into a borrowing handle, rather than cleared out.
      */
 
     Handle& operator=(Handle&& other) noexcept
@@ -185,42 +187,19 @@ public:
         return *this;
     }
 
-    /** If the handle only holds a borrowed reference.
-     */
-
-    bool if_borrow() const noexcept { return if_borrow_; }
+    //
+    // Methods querying basic info about the current handle
+    //
 
     /** If the handle contains any object.
      */
 
     explicit operator bool() const noexcept { return ref_ != nullptr; }
 
-    /** Resets the handle to refer to another Python object.
-     *
-     * All the parameters has the same semantics as the constructor.
+    /** If the handle only holds a borrowed reference.
      */
 
-    void reset(PyObject* ref, Own own = STEAL, bool allow_null = false)
-    {
-        decr_ref();
-        set(ref, own, allow_null);
-    }
-
-    /** Gets a pointer to PyObject pointer to read in a borrowed reference.
-     *
-     * This method is for the convenience of working with CPython API functions
-     * like PyArg_ParseTuple.  The returned pointer can be directly given to
-     * this kind of CPython API functions to read the object to be handled in.
-     * Note that this method can only be used to create borrowing references.
-     */
-
-    PyObject** read() noexcept
-    {
-        decr_ref();
-        ref_ = nullptr;
-        if_borrow_ = true;
-        return &ref_;
-    }
+    bool if_borrow() const noexcept { return if_borrow_; }
 
     /** Gets the pointer to the Python object handled.
      *
@@ -234,9 +213,20 @@ public:
      *
      * This can be helpful for working with CPython API functions or even cpypp
      * functions taking a borrowed reference to a Python object just as input.
+     *
+     * Note that it will cause serious error if the result is used for
+     * functions stealing references!
      */
 
     operator PyObject*() const noexcept { return get(); }
+
+    /** Compares the identity of the underlying object.
+     *
+     * Because of the implicit cast rules, this method can be used for the
+     * comparison with either handles or raw pointers.
+     */
+
+    bool is(const PyObject* o) const noexcept { return get() == o; }
 
     /** Gets the handled pointer with a new reference created.
      *
@@ -254,15 +244,6 @@ public:
             Py_INCREF(ref_);
         }
         return ref_;
-    }
-
-    /** Swaps the managed Python object with another handle.
-     */
-
-    void swap(Handle& other) noexcept
-    {
-        std::swap(ref_, other.ref_);
-        std::swap(if_borrow_, other.if_borrow_);
     }
 
     /** Releases the ownership of the managed object.
@@ -292,13 +273,45 @@ public:
         return ref_;
     }
 
-    /** Compares the identity of the underlying object.
+    //
+    // Methods for mutating the object handled
+    //
+
+    /** Resets the handle to refer to another Python object.
      *
-     * Because of the implicit cast rules, this method can be used for the
-     * comparison with either handles or raw pointers.
+     * All the parameters has the same semantics as the constructor.
      */
 
-    bool is(const PyObject* o) const noexcept { return get() == o; }
+    void reset(PyObject* ref, Own own = STEAL, bool allow_null = false)
+    {
+        decr_ref();
+        set(ref, own, allow_null);
+    }
+
+    /** Gets a pointer to PyObject pointer to read in a borrowed reference.
+     *
+     * This method is for the convenience of working with CPython API functions
+     * like PyArg_ParseTuple.  The returned pointer can be directly given to
+     * this kind of CPython API functions to read the object to be handled in.
+     * Note that this method can only be used to create borrowing references.
+     */
+
+    PyObject** read() noexcept
+    {
+        decr_ref();
+        ref_ = nullptr;
+        if_borrow_ = true;
+        return &ref_;
+    }
+
+    /** Swaps the managed Python object with another handle.
+     */
+
+    void swap(Handle& other) noexcept
+    {
+        std::swap(ref_, other.ref_);
+        std::swap(if_borrow_, other.if_borrow_);
+    }
 
     //
     // Utilities for building and parsing values
