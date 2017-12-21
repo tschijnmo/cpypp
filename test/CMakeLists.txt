@@ -7,7 +7,7 @@ file(DOWNLOAD
 
 # The main test driver.
 add_executable(testmain
-    test.cpp
+    testmain.cpp
     handle.cpp
     exc_utils.cpp
     number_proto.cpp
