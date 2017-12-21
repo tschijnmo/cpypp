@@ -335,7 +335,8 @@ public:
     /** Constructs a handle from result of the Py_BuildValue function.
      *
      * All the arguments are exactly forwarded to the CPython Py_BuildValue
-     * function, with the resulted objected given to the handle.
+     * function, with the resulted objected given to the handle.  `Exc_set`
+     * will be raised if the construction failed.
      */
 
     template <typename... Args>
@@ -346,7 +347,7 @@ public:
 
     /** Reads the Python object as return value.
      *
-     * This tiny wrapper over the normal `as` function gives an alternative
+     * This tiny wrapper over the normal `as` methods gives an alternative
      * interface for reading a Python object into a native C++ value.  Rather
      * than taking an l-value reference, a pr-value of the given type is
      * returned.  Error is likewise handled by `Exc_set` C++ exception.
@@ -382,7 +383,7 @@ public:
     /** Sets an attribute for the handled object.
      *
      * This methods takes an non-owning reference to the object to be set as
-     * the given attribute.
+     * the given attribute, which can be from implicit casting from a Handle.
      */
 
     void setattr(const char* attr, PyObject* v)
@@ -573,6 +574,9 @@ private:
     //
 
     /** Sets the current handle to refer to the given object.
+     *
+     * Note that this internal method does not take care of the previous values
+     * of the fields.
      */
 
     void set(PyObject* ref, Own own, bool allow_null)
@@ -810,6 +814,9 @@ inline Iter_handle Handle::end() const noexcept { return Iter_handle{}; }
  * This open struct is aimed to facilitate the handling of type objects stored
  * statically.  So it is not a subclass of the main Handle class.
  */
+
+// TODO: This utility is not yet developed or tested for anything other than
+// handling struct sequences.
 
 struct Static_type {
     /** The actual Python type object.
