@@ -27,7 +27,7 @@ TEST_CASE("Integer can be built and parsed", "[Handle]")
             long val;
             from_gen.as(val);
             CHECK(val == 1);
-            CHECK(from_gen.as<long>() == 1);
+            CHECK(from_gen.as<decltype(v)>() == 1);
         }
         CHECK(Py_REFCNT(one) == curr_count);
     };

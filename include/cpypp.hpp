@@ -547,6 +547,12 @@ public:
         check_exc();
     }
 
+    void as(unsigned long& out) const
+    {
+        out = PyLong_AsUnsignedLong(ref_);
+        check_exc();
+    }
+
     //
     // Sequence objects
     //
