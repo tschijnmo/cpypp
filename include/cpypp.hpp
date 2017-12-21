@@ -5,9 +5,8 @@
  * This is only header file for the project.  Everything is defined inside the
  * `cpypp` namespace.  It can simply be included in files where it is needed.
  *
- * The both the methods and their tests are roughly sectioned in the same way
- * as the organization of the wrapped functions in the CPython C API
- * documentation.
+ * The both the contents of this file and their tests are roughly sectioned in
+ * the same way as the organization of the CPython C API documentation.
  */
 
 #ifndef CPYPP_CPYPP_HPP
@@ -89,7 +88,7 @@ enum Own { STEAL, BORROW, NEW };
 class Handle {
 public:
     //
-    // Special methods.
+    // Special methods
     //
 
     /** Constructs a handle for an object.
@@ -293,29 +292,116 @@ public:
         return ref_;
     }
 
-    //
-    // Type protocol
-    //
-    // WIP: These methods are not fully tested yet.
-    //
-
-    /** Checks if the handled object is a type object.
-     */
-
-    bool check_type() const noexcept { return PyType_Check(get()); }
-
-    /** Gets the pointer to the handled type.
+    /** Compares the identity of the underlying object.
      *
-     * Note that assertion will fail if the handle is not holding an actual
-     * type object.  It is the responsiblity of the caller to check before
-     * calling this method.
+     * Because of the implicit cast rules, this method can be used for the
+     * comparison with either handles or raw pointers.
      */
 
-    PyTypeObject* as_type() const noexcept
+    bool is(const PyObject* o) const noexcept { return get() == o; }
+
+    //
+    // Utilities for building and parsing values
+    //
+    // Here we have the generic utilities for building/parsing Python objects
+    // from/into native C++ values.  Individual concrete Python object types
+    // may also have specialized methods for these two purposes.
+    //
+    // Normally, to build from native C++ types, we have an overload of the
+    // constructor.  For some special types like tuple, we also have subclass
+    // of this Handle class for their construction.
+    //
+    // To read into a C++ type, we can have an `as` overload, which reads the
+    // Python object into the given C++ native object.  For all these
+    // overloads, the target is put as an reference argument so that the
+    // overload can be automatically deduced.  When the conversion fails, the
+    // `Exc_set` exception will be thrown.  With the `as` template, these
+    // overload can also automatically be used to generate R-values.
+    //
+
+    /** Constructs a handle from result of the Py_BuildValue function.
+     *
+     * All the arguments are exactly forwarded to the CPython Py_BuildValue
+     * function, with the resulted objected given to the handle.
+     */
+
+    template <typename... Args>
+    Handle(const char* format, Args&&... args)
+        : Handle(Py_BuildValue(format, std::forward<Args>(args)...))
     {
-        assert(*this && check_type());
-        return (PyTypeObject*)get();
     }
+
+    /** Reads the Python object as return value.
+     *
+     * This tiny wrapper over the normal `as` function gives an alternative
+     * interface for reading a Python object into a native C++ value.  Rather
+     * than taking an l-value reference, a pr-value of the given type is
+     * returned.  Error is likewise handled by `Exc_set` C++ exception.
+     *
+     * Note that the type of the Handle object might need to be explicitly
+     * declared to be `Handle` (rather than auto) when this function is used
+     * inside templates.
+     */
+
+    template <typename T> T as() const
+    {
+        T res;
+        as(res);
+        return res;
+    }
+
+    //
+    // Object protocol
+    //
+
+    // Attribute manipulations.
+
+    /** Gets an attribute for the object.
+     *
+     * Exception will be set when failure occurs during getting the attribute.
+     */
+
+    Handle getattr(const char* attr)
+    {
+        return Handle{ PyObject_GetAttrString(get(), attr) };
+    }
+
+    /** Sets an attribute for the handled object.
+     *
+     * This methods takes an non-owning reference to the object to be set as
+     * the given attribute.
+     */
+
+    void setattr(const char* attr, PyObject* v)
+    {
+        if (PyObject_SetAttrString(get(), attr, v) != 0) {
+            throw Exc_set{};
+        }
+        return;
+    }
+
+    /** Deletes the given attributes.
+     */
+
+    void delattr(const char* attr)
+    {
+        if (PyObject_DelAttrString(get(), attr) != 0) {
+            throw Exc_set{};
+        }
+        return;
+    }
+
+    // Python object comparisons
+    //
+    // The C++ comparison operators are all mapped into the corresponding
+    // comparison for Python object.
+
+    bool operator<(const Handle& o) const { return compare<Py_LT>(o); }
+    bool operator<=(const Handle& o) const { return compare<Py_LE>(o); }
+    bool operator==(const Handle& o) const { return compare<Py_EQ>(o); }
+    bool operator!=(const Handle& o) const { return compare<Py_NE>(o); }
+    bool operator>(const Handle& o) const { return compare<Py_GT>(o); }
+    bool operator>=(const Handle& o) const { return compare<Py_GE>(o); }
 
     //
     // Number protocol
@@ -362,71 +448,12 @@ public:
     }
 
     //
-    // Python object comparisons
-    //
-    // The C++ comparison operators are all mapped into the corresponding
-    // comparison for Python object.
+    // Sequence protocol
     //
 
-    bool operator<(const Handle& o) const { return compare<Py_LT>(o); }
-    bool operator<=(const Handle& o) const { return compare<Py_LE>(o); }
-    bool operator==(const Handle& o) const { return compare<Py_EQ>(o); }
-    bool operator!=(const Handle& o) const { return compare<Py_NE>(o); }
-    bool operator>(const Handle& o) const { return compare<Py_GT>(o); }
-    bool operator>=(const Handle& o) const { return compare<Py_GE>(o); }
-
-    /** Compares the identity of the underlying object.
-     *
-     * Because of the implicit cast rules, this method can be used for the
-     * comparison with either handles or raw pointers.
-     */
-
-    bool is(const PyObject* o) const noexcept { return get() == o; }
-
     //
-    // For sequence or container protocol and types
+    // Mapping protocol
     //
-
-    /** Checks if the handled object is a tuple instance.
-     */
-
-    bool check_tuple() const noexcept { return PyTuple_Check(get()); }
-
-    //
-    // Attribute manipulation
-    //
-
-    /** Gets an attribute for the object.
-     *
-     * Exception will be set when failure occurs during getting the attribute.
-     */
-
-    Handle getattr(const char* attr)
-    {
-        return Handle{ PyObject_GetAttrString(get(), attr) };
-    }
-
-    /** Sets an attribute for the handled object.
-     *
-     * This methods takes an non-owning reference to the object to be set as
-     * the given attribute.
-     */
-
-    void setattr(const char* attr, PyObject* v)
-    {
-        if (PyObject_SetAttrString(get(), attr, v) != 0) {
-            throw Exc_set{};
-        }
-        return;
-    }
-
-    void delattr(const char* attr)
-    {
-        if (PyObject_DelAttrString(get(), attr) != 0) {
-            throw Exc_set{};
-        }
-        return;
-    }
 
     //
     // Iterator protocol
@@ -451,20 +478,38 @@ public:
     Iter_handle end() const noexcept;
 
     //
-    // Building from native C++ types.
+    // Buffer protocol
     //
 
-    /** Constructs a handle from result of the Py_BuildValue function.
-     *
-     * All the arguments are exactly forwarded to the CPython Py_BuildValue
-     * function, with the resulted objected given to the handle.
+    //
+    // Fundamental objects
+    //
+
+    // Type object
+    //
+    // WIP: These methods are not fully tested yet.
+
+    /** Checks if the handled object is a type object.
      */
 
-    template <typename... Args>
-    Handle(const char* format, Args&&... args)
-        : Handle(Py_BuildValue(format, std::forward<Args>(args)...))
+    bool check_type() const noexcept { return PyType_Check(get()); }
+
+    /** Gets the pointer to the handled type.
+     *
+     * Note that assertion will fail if the handle is not holding an actual
+     * type object.  It is the responsiblity of the caller to check before
+     * calling this method.
+     */
+
+    PyTypeObject* as_type() const noexcept
     {
+        assert(*this && check_type());
+        return (PyTypeObject*)get();
     }
+
+    //
+    // Numeric objects
+    //
 
     /** Builds a built-in Python int object.
      */
@@ -479,18 +524,7 @@ public:
     {
     }
 
-    //
-    // Conversion to native C++ types.
-    //
-
-    /** Reads the Python object into the given C++ native object.
-     *
-     * Here we provide a set of overloaded functions to parse the content of
-     * the managed Python objects into native C++ objects.  For all these
-     * functions, the target is put as an reference argument so that the
-     * overload can be automatically deduced.  When the conversion fails, the
-     * `Exc_set` exception will be thrown.
-     *
+    /** Reads a Python integer into a C++ integral object.
      */
 
     void as(long& out) const
@@ -499,24 +533,26 @@ public:
         check_exc();
     }
 
-    /** Reads the Python object as return value.
-     *
-     * This tiny wrapper over the normal `as` function gives an alternative
-     * interface for reading a Python object into a native C++ value.  Rather
-     * than taking an l-value reference, a pr-value of the given type is
-     * returned.  Error is likewise handled by `Exc_set` C++ exception.
-     *
-     * Note that the type of the Handle object might need to be explicitly
-     * declared to be `Handle` (rather than auto) when this function is used
-     * inside templates.
+    //
+    // Sequence objects
+    //
+
+    /** Checks if the handled object is a tuple instance.
      */
 
-    template <typename T> T as() const
-    {
-        T res;
-        as(res);
-        return res;
-    }
+    bool check_tuple() const noexcept { return PyTuple_Check(get()); }
+
+    //
+    // Container objects
+    //
+
+    //
+    // Function objects
+    //
+
+    //
+    // Other objects
+    //
 
 private:
     //
@@ -605,7 +641,7 @@ inline PyObject* get_new(const Handle& handle) noexcept
 inline PyObject* get_new(Handle&& handle) noexcept { return handle.release(); }
 
 //
-// Utilities for the iterator protocol
+// Utilities for iterator protocol
 //
 
 /** Wrapper over a Python iterator.
@@ -753,70 +789,7 @@ inline Iter_handle Handle::begin() const
 inline Iter_handle Handle::end() const noexcept { return Iter_handle{}; }
 
 //
-// Utility for tuples
-//
-
-/** Handles for tuples.
- *
- * This class is mostly designed for creating new tuples rather than reading
- * existing tuples, for which the generic sequence or iterable protocol is
- * better used.
- */
-
-class Tuple : public Handle {
-public:
-    /** Constructs a tuple of the given length.
-     */
-
-    Tuple(Py_ssize_t len)
-        : Handle(PyTuple_New(len))
-    {
-    }
-
-    /** Sets an item for the tuple at the given position.
-     */
-
-    template <typename T> void setitem(Py_ssize_t pos, T&& v)
-    {
-        PyTuple_SET_ITEM(get(), pos, cpypp::get_new(std::forward<T>(v)));
-    }
-};
-
-//
-// Utility for modules
-//
-
-class Module : public Handle {
-public:
-    /** Constructs a handle managing the given module.
-     *
-     * Since normally when working with modules in extentions, especially for
-     * the new multi-phase initialization, we only need to work with a borrowed
-     * reference to a module.  So different from the corresponding constructor
-     * of the base class, this constructor does not steal a reference by
-     * default.
-     */
-
-    Module(PyObject* mod, Own own = BORROW, bool allow_null = false)
-        : Handle(mod, own, allow_null)
-    {
-    }
-
-    /** Adds an object to the module.
-     */
-
-    template <typename T> void add_object(const char* name, T&& v)
-    {
-        if (PyModule_AddObject(get(), name, cpypp::get_new(std::forward<T>(v)))
-            != 0) {
-            throw Exc_set{};
-        }
-        return;
-    }
-};
-
-//
-// Utility for static type objects
+// Utilities for fundamental objects
 //
 
 /** Static types.
@@ -887,8 +860,38 @@ struct Static_type {
 };
 
 //
-// Struct sequence utilities
+// Utilities for numeric objects
 //
+
+//
+// Utilities for sequence objects
+//
+
+/** Handles for tuples.
+ *
+ * This class is mostly designed for creating new tuples rather than reading
+ * existing tuples, for which the generic sequence or iterable protocol is
+ * better used.
+ */
+
+class Tuple : public Handle {
+public:
+    /** Constructs a tuple of the given length.
+     */
+
+    Tuple(Py_ssize_t len)
+        : Handle(PyTuple_New(len))
+    {
+    }
+
+    /** Sets an item for the tuple at the given position.
+     */
+
+    template <typename T> void setitem(Py_ssize_t pos, T&& v)
+    {
+        PyTuple_SET_ITEM(get(), pos, cpypp::get_new(std::forward<T>(v)));
+    }
+};
 
 /** Handles for CPython struct sequence objects.
  */
@@ -921,6 +924,53 @@ public:
     {
         PyStructSequence_SetItem(
             get(), pos, cpypp::get_new(std::forward<T>(v)));
+        return;
+    }
+};
+
+//
+// Utilities for container objects
+//
+
+//
+// Utilities for function objects
+//
+
+//
+// Utilities for other objects
+//
+
+/** Handles for Python modules.
+ *
+ * This subclass primarily just adds some utility methods for working with
+ * modules.
+ */
+
+class Module : public Handle {
+public:
+    /** Constructs a handle managing the given module.
+     *
+     * Since normally when working with modules in extentions, especially for
+     * the new multi-phase initialization, we only need to work with a borrowed
+     * reference to a module.  So different from the corresponding constructor
+     * of the base class, this constructor does not steal a reference by
+     * default.
+     */
+
+    Module(PyObject* mod, Own own = BORROW, bool allow_null = false)
+        : Handle(mod, own, allow_null)
+    {
+    }
+
+    /** Adds an object to the module.
+     */
+
+    template <typename T> void add_object(const char* name, T&& v)
+    {
+        if (PyModule_AddObject(get(), name, cpypp::get_new(std::forward<T>(v)))
+            != 0) {
+            throw Exc_set{};
+        }
         return;
     }
 };
