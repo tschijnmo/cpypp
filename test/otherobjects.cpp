@@ -1,4 +1,4 @@
-/** Tests for the handle for modules.
+/** Tests for utility for uncategorized concrete object.
  */
 
 #include <catch.hpp>
@@ -18,6 +18,7 @@ TEST_CASE("Modules have basic features", "[Handle][Module]")
     {
         {
             Module mod(mod_ptr);
+            CHECK(Py_REFCNT(mod_ptr) == mod_count);
         }
         CHECK(Py_REFCNT(mod_ptr) == mod_count);
     }

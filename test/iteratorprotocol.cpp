@@ -1,4 +1,4 @@
-/** Tests for mapping of iterator protocol functions.
+/** Tests for iterator protocol functionality.
  */
 
 #include <algorithm>
@@ -13,7 +13,7 @@
 
 using namespace cpypp;
 
-TEST_CASE("Handles has basic iterator protocol", "[Handle][iterator]")
+TEST_CASE("Handles has basic iterator protocol", "[Handle][Iter_handle]")
 {
     // A simple list of integers.
     Handle one_two_three("[iii]", 1, 2, 3);
@@ -54,7 +54,7 @@ TEST_CASE("Handles has basic iterator protocol", "[Handle][iterator]")
     }
 }
 
-TEST_CASE("Iterator utilities reports wrong types", "[Handle][iterator]")
+TEST_CASE("Iterator utilities report wrong types", "[Handle][Iter_handle]")
 {
     // A non-iterable and non-iterator integer.
     Handle one(1l);

@@ -9,14 +9,16 @@ file(DOWNLOAD
 add_executable(testmain
     testmain.cpp
     handle.cpp
-    exc_utils.cpp
-    number_proto.cpp
-    iter_proto.cpp
-    parse_build.cpp
-    tuple.cpp
-    module.cpp
-    struct_sequence.cpp
+    exc.cpp
+    parsebuild.cpp
+    objectprotocol.cpp
+    numberprotocol.cpp
+    iteratorprotocol.cpp
+    numericobjects.cpp
+    sequenceobjects.cpp
+    otherobjects.cpp
 )
+
 target_include_directories(testmain
     PRIVATE ${CMAKE_CURRENT_BINARY_DIR}
     PRIVATE "${PROJECT_SOURCE_DIR}/include"

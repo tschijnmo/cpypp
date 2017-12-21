@@ -1,4 +1,4 @@
-/** Tests for mapping of Number protocol functions.
+/** Tests for Number protocol functions.
  */
 
 #include <catch.hpp>
@@ -9,7 +9,7 @@
 
 using namespace cpypp;
 
-TEST_CASE("Handles maps basic number protocol", "[Handle][Number]")
+TEST_CASE("Handles maps basic number protocol", "[Handle]")
 {
     // Basically two simple integers are used for the testing.
     long num1 = 6;

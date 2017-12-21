@@ -1,4 +1,4 @@
-/** Tests for the utilities related to Python exceptions.
+/** Tests for the utilities related to Python exception handling.
  */
 
 #include <catch.hpp>
@@ -9,7 +9,7 @@
 
 using namespace cpypp;
 
-TEST_CASE("Python exceptions can be detected", "[exception]")
+TEST_CASE("Python exceptions can be detected", "[Exc_set]")
 {
     CHECK(check_exc() == 0);
 
