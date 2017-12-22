@@ -1,6 +1,8 @@
 /** Tests for Number protocol functions.
  */
 
+#include <functional>
+
 #include <catch.hpp>
 
 #include <Python.h>
@@ -26,16 +28,26 @@ TEST_CASE("Handles maps basic number protocol", "[Handle]")
         CHECK_FALSE(tup.check_number());
     }
 
-    SECTION("adds correctly")
+    SECTION("performs binary arithmetic operations correctly")
     {
-        auto res = handle1 + handle2;
-        CHECK(res == Handle(num1 + num2));
-    }
+        auto check_bin = [&](auto op) {
+            long expected = op(num1, num2);
 
-    SECTION("multiplies correctly")
-    {
-        auto res = handle1 * handle2;
-        CHECK(res == Handle(num1 * num2));
+            // Check inside Python.
+            auto res = op(handle1, handle2);
+            CHECK(res == Handle(expected));
+
+            // Check inside C++.
+            long res_num;
+            res.as(res_num);
+            CHECK(res_num == expected);
+        };
+
+        check_bin(std::plus<>());
+        check_bin(std::minus<>());
+        check_bin(std::multiplies<>());
+        check_bin(std::divides<>());
+        check_bin(std::modulus<>());
     }
 
     SECTION("makes divmod correctly")

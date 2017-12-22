@@ -431,8 +431,15 @@ public:
 
     friend Handle operator+(const Handle& o1, const Handle& o2)
     {
-        PyObject* res = PyNumber_Add(o1.get(), o2.get());
-        return Handle(res);
+        return { PyNumber_Add(o1.get(), o2.get()) };
+    }
+
+    /** Substracts one number from other.
+     */
+
+    friend Handle operator-(const Handle& o1, const Handle& o2)
+    {
+        return { PyNumber_Subtract(o1.get(), o2.get()) };
     }
 
     /** Multiplies two numbers.
@@ -440,8 +447,29 @@ public:
 
     friend Handle operator*(const Handle& o1, const Handle& o2)
     {
-        PyObject* res = PyNumber_Multiply(o1.get(), o2.get());
-        return Handle(res);
+        return { PyNumber_Multiply(o1.get(), o2.get()) };
+    }
+
+    /** Divides by a number.
+     *
+     * Note that here we perform the floor division with `/` operator for less
+     * astonishment for C++ coders.
+     */
+
+    friend Handle operator/(const Handle& o1, const Handle& o2)
+    {
+        return { PyNumber_FloorDivide(o1.get(), o2.get()) };
+    }
+
+    /** Gets the remainder.
+     *
+     * Note that the remainder operator in Python has slightly different
+     * methatical definition than that in native C++.
+     */
+
+    friend Handle operator%(const Handle& o1, const Handle& o2)
+    {
+        return { PyNumber_Remainder(o1.get(), o2.get()) };
     }
 
     /** Gets the quotient and the remainder.
