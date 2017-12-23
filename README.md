@@ -1,3 +1,5 @@
+[![Build Status](https://circleci.com/gh/tschijnmo/cpypp.svg?style=shield)](https://circleci.com/gh/tschijnmo/cpypp)
+
 # cpypp
 
 A simple wrapper of CPython C API for C++
